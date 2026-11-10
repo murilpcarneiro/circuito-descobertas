@@ -1,0 +1,13 @@
+.firebase/
+*.log
+
+# Gradle/Kotlin locais (inclusive caches soltos dentro de android/app)
+**/.gradle/
+**/.kotlin/
+*.iml
+
+# Segredos: nunca publicar
+.env
+key.properties
+*.jks
+*.keystore

@@ -1,0 +1,28 @@
+name: circuito_descobertas
+description: "App do visitante do Circuito de Descobertas (Amazon Hacking)."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+# Versões "any": o pub resolve a mais recente compatível com o seu Flutter.
+# Depois do primeiro `flutter pub get`, as versões ficam travadas no pubspec.lock.
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
+  firebase_remote_config: any
+  firebase_analytics: any
+  mobile_scanner: any
+  cupertino_icons: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true

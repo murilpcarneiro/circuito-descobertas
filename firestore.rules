@@ -1,0 +1,58 @@
+rules_version = '2';
+
+// Circuito de Descobertas
+//  - admins/{uid}            → existe = é administrador (criado à mão no console)
+//  - estandes/{estandeId}    → nome, descricao, localizacao, ativo
+//  - checkins/{uid_estande}  → visitanteId, estandeId, criadoEm
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return logado() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      // Cada um só consegue ver se o próprio documento existe (o painel usa isso).
+      allow read: if logado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /estandes/{estandeId} {
+      // Lista: visitantes só enxergam estandes ativos; o admin vê todos.
+      allow list: if isAdmin() || (logado() && resource.data.ativo == true);
+      // Leitura de um estande pelo ID (após ler o QR): permitida a qualquer
+      // usuário logado, para o app conseguir avisar "estande inativo".
+      allow get: if logado();
+      // Somente administradores criam, editam ou removem estandes.
+      allow create, update: if isAdmin()
+        && request.resource.data.nome is string
+        && request.resource.data.ativo is bool;
+      allow delete: if isAdmin();
+    }
+
+    match /checkins/{checkinId} {
+      // O admin lê todos para calcular os totais; o visitante lê os próprios.
+      allow list: if isAdmin()
+        || (logado() && resource.data.visitanteId == request.auth.uid);
+      allow get: if isAdmin()
+        || (logado() && checkinId.matches('^' + request.auth.uid + '_.+$'));
+
+      // Visitante cria apenas o check-in da própria identidade,
+      // com a chave composta {uid}_{estandeId}, num estande ativo.
+      // Como não há "update", uma segunda visita ao mesmo estande é recusada.
+      allow create: if logado()
+        && request.resource.data.keys().hasOnly(['visitanteId', 'estandeId', 'criadoEm'])
+        && request.resource.data.visitanteId == request.auth.uid
+        && checkinId == request.auth.uid + '_' + request.resource.data.estandeId
+        && request.resource.data.criadoEm == request.time
+        && get(/databases/$(database)/documents/estandes/$(request.resource.data.estandeId)).data.ativo == true;
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+  }
+}
